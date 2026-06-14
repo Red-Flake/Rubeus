@@ -1,0 +1,62 @@
+name: Build Rubeus
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: Build configuration
+        type: choice
+        required: true
+        default: Release
+        options:
+          - Release
+          - Debug
+
+jobs:
+  build:
+    name: Build ${{ inputs.configuration || 'Release' }}
+    runs-on: windows-2022
+
+    env:
+      CONFIGURATION: ${{ inputs.configuration || 'Release' }}
+      PLATFORM: Any CPU
+      TARGET_FRAMEWORK_VERSION: v4.8
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build solution
+        shell: pwsh
+        run: |
+          msbuild Rubeus.sln `
+            /restore `
+            /t:Build `
+            /m `
+            /p:Configuration="$env:CONFIGURATION" `
+            /p:Platform="$env:PLATFORM" `
+            /p:TargetFrameworkVersion="$env:TARGET_FRAMEWORK_VERSION"
+
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          $exe = "Rubeus\bin\$env:CONFIGURATION\Rubeus.exe"
+          if (-not (Test-Path $exe)) {
+            throw "Expected build output was not found: $exe"
+          }
+          Get-Item $exe | Format-List FullName,Length,LastWriteTime
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rubeus-${{ env.CONFIGURATION }}
+          path: Rubeus/bin/${{ env.CONFIGURATION }}/
+          if-no-files-found: error
