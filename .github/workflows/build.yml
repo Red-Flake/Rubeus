@@ -18,6 +18,9 @@ on:
           - Release
           - Debug
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ inputs.configuration || 'Release' }}
@@ -61,3 +64,16 @@ jobs:
           name: Rubeus-${{ env.CONFIGURATION }}
           path: Rubeus/bin/${{ env.CONFIGURATION }}/
           if-no-files-found: error
+
+      - name: Create GitHub release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/CI' && env.CONFIGURATION == 'Release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "ci-$env:GITHUB_RUN_NUMBER"
+          gh release create $tag `
+            "Rubeus\bin\$env:CONFIGURATION\Rubeus.exe" `
+            --title "Rubeus $tag" `
+            --notes "Automated Release build from commit $env:GITHUB_SHA." `
+            --latest
