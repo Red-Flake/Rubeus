@@ -3,6 +3,7 @@ name: Build Rubeus
 on:
   push:
     branches:
+      - CI
       - master
       - main
   pull_request:
