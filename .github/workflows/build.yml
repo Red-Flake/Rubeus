@@ -71,9 +71,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "ci-$env:GITHUB_RUN_NUMBER"
+          $shortSha = $env:GITHUB_SHA.Substring(0, 7)
+          $tag = "Rubeus-$shortSha"
           gh release create $tag `
             "Rubeus\bin\$env:CONFIGURATION\Rubeus.exe" `
-            --title "Rubeus $tag" `
+            --title $tag `
             --notes "Automated Release build from commit $env:GITHUB_SHA." `
             --latest
